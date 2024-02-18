@@ -1,0 +1,7 @@
+.DS_Store
+rgb_dataset/
+rtabmap.db
+rtabmap2.db
+cloud.ply
+mesh.ply
+mesh2.ply
