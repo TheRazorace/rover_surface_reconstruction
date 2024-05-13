@@ -1,23 +1,24 @@
 import open3d as o3d 
 import numpy as np
-import matplotlib.pyplot as plt
-import pickle
 
 def process_pc(pcd):
-
-    # Downsample the point cloud for better performance and visualization
-    pcd = pcd.voxel_down_sample(voxel_size=0.02)
 
     #Statistical outlier removal 
     pcd, index = pcd.remove_statistical_outlier(nb_neighbors=50, std_ratio=1.0)
     #inlier_cloud = pcd.select_by_index(index).paint_uniform_color([0.8,0.8,0.8])
-    #outlier_cloud = pcd.select_by_index(index, invert = True).paint_uniform_color([1,0,0])
+    outlier_cloud = pcd.select_by_index(index, invert = True).paint_uniform_color([1,0,0])
+
+    # Downsample the point cloud for better performance and visualization
+    pcd = pcd.voxel_down_sample(voxel_size=0.01)
 
     #Radius outlier removal
-    #pcd, index = pcd.remove_radius_outlier(nb_points = 16, radius = 0.07)
+    pcd, index = pcd.remove_radius_outlier(nb_points = 16, radius = 0.07)
 
     # Normalize the point cloud for consistent scale
-    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    nn_distance = np.mean(pcd.compute_nearest_neighbor_distance())
+    radius_normal = nn_distance*4
+    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=50), 
+                         fast_normal_computation=True)
     #pcd.orient_normals_consistent_tangent_plane(100)
 
     return pcd
@@ -82,19 +83,18 @@ def surface_reconstructor_poison(pcd):
 if __name__ == "__main__":
     
     print("Loading point cloud...")
-    ply_path = "/Users/ioannisdasoulas/Desktop/Various-Projects/ROS/rtab_refinement/integrated.ply"
+    ply_path = "/Users/ioannisdasoulas/Desktop/Various-Projects/Beyond/rover_surface_reconstruction/point_clouds/cloud.ply"
     #poses_path = "/Users/ioannisdasoulas/Desktop/Various-Projects/ROS/rtab_refinement/poses.txt"
     
-    pcd = o3d.io.read_triangle_mesh(ply_path)
-    #poses = np.loadtxt("poses.txt")
-    o3d.visualization.draw_geometries([pcd], mesh_show_back_face = True)
+    pcd = o3d.io.read_point_cloud(ply_path)
+    #o3d.visualization.draw_geometries([pcd], mesh_show_back_face = True)
 
-    # print("Performing point cloud processing...")
-    # pcd = process_pc(pcd)
+    print("Performing point cloud processing...")
+    pcd = process_pc(pcd)
 
-    # print("Performing surface reconstruction...")
+    print("Performing surface reconstruction...")
     # # #surface_reconstructor_alpha(pcd)
     # # #surface_reconstructor_bpa(pcd)
-    #surface_reconstructor_poison(pcd)
+    surface_reconstructor_poison(pcd)
     
 
